@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Exists
+from django.db.models import Exists, OuterRef
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -33,4 +33,5 @@ class UserViewSet(viewsets.ModelViewSet):
         return User.objects.annotate(
             is_subscribed=Exists(
                 Subscription.objects.filter(
-                    pk=self.request.user.id)))
+                    subscriber=self.request.user.id,
+                    subscription=OuterRef('pk'))))

@@ -31,8 +31,8 @@ class User(AbstractUser):
 
     REQUIRED_FIELDS = (
         'email',
-        'firstname',
-        'lastname',
+        'first_name',
+        'last_name',
         'password')
 
     class Meta:
@@ -47,11 +47,19 @@ class Subscription(models.Model):
     """Subscription many to many model."""
 
     subscription = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='+')
+        User,
+        on_delete=models.CASCADE,
+        related_name='+',
+        verbose_name='Подписан на')
     subscriber = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='+')
+        User,
+        on_delete=models.CASCADE,
+        related_name='+',
+        verbose_name='Пользователь')
 
     class Meta:
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
         constraints = [
             models.UniqueConstraint(
                 name='Subscriptions_unique_relationships',
@@ -62,3 +70,6 @@ class Subscription(models.Model):
                 check=~models.Q(subscription=models.F('subscriber')),
             ),
         ]
+
+    def __str__(self):
+        return f'{self.subscriber} подписан на {self.subscription}'
