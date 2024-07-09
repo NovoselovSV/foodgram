@@ -24,7 +24,7 @@ class User(AbstractUser):
         verbose_name='Подписки',
         through_fields=('subscription', 'subscriber'),
         symmetrical=False)
-    avatar = models.ImageField(upload_to='avatars/',
+    avatar = models.ImageField(upload_to='users/',
                                null=True,
                                blank=True,
                                default=None)
@@ -32,8 +32,7 @@ class User(AbstractUser):
     REQUIRED_FIELDS = (
         'email',
         'first_name',
-        'last_name',
-        'password')
+        'last_name')
 
     class Meta:
         verbose_name = 'Пользователь'
