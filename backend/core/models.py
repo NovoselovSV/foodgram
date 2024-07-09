@@ -22,7 +22,7 @@ class User(AbstractUser):
         through='Subscription',
         related_name='subscribers',
         verbose_name='Подписки',
-        through_fields=('subscription', 'subscriber'),
+        through_fields=('subscriber', 'subscription'),
         symmetrical=False)
     avatar = models.ImageField(upload_to='users/',
                                null=True,
@@ -61,7 +61,7 @@ class Subscription(models.Model):
         verbose_name_plural = 'Подписки'
         constraints = [
             models.UniqueConstraint(
-                name='Subscriptions_unique_relationships',
+                name='subscriptions_unique_relationships',
                 fields=['subscription', 'subscriber']
             ),
             models.CheckConstraint(

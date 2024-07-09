@@ -135,11 +135,12 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.AllowAny',
     ],
 
+    # Sessions for debug
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ],
 
-    # for debug
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
@@ -152,3 +153,8 @@ DJOSER = {
 
 MAX_NAME_LENGTH = 150
 MAX_EMAIL_LENGTH = 254
+RESPONSE_FOLLOW_MSGS = {
+    'CHECK constraint failed: prevent_self_follow': 'User can\'t subscribe himself',
+    'UNIQUE constraint failed: core_subscription.subscription_id, core_subscription.subscriber_id': 'You are already subscribed'
+}
+NOT_SUBSCRIBED_MSG = 'You wasn\'t subscribed'
