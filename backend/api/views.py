@@ -1,12 +1,12 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Exists, OuterRef
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from core.models import Subscription
-
-from .serializers import UserReadSerializer, UserWriteSerializer
+from .serializers import AvatarSerializer, UserReadSerializer, UserWriteSerializer
 
 User = get_user_model()
 
@@ -21,11 +21,22 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=('get',),
             permission_classes=(IsAuthenticated,))
     def me(self, request):
-        self.kwargs['username'] = request.user.username
-        return self.retrieve(request)
+        return self.retrieve(request, request.user.id)
+
+    @action(detail=False, methods=('put', 'delete'),
+            permission_classes=(IsAuthenticated,), url_path='me/avatar')
+    def avatar(self, request):
+        user = request.user
+        if request.method == 'DELETE':
+            user.avatar.delete(save=True)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        serializer = AvatarSerializer(user, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
 
     def get_serializer_class(self):
-        if self.action in ('list', 'retrieve'):
+        if self.action in ('list', 'retrieve', 'me'):
             return UserReadSerializer
         return UserWriteSerializer
 
