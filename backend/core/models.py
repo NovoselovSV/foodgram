@@ -25,6 +25,7 @@ class User(AbstractUser):
         through_fields=('subscriber', 'subscription'),
         symmetrical=False)
     avatar = models.ImageField(upload_to='users/',
+                               verbose_name='Аватар',
                                null=True,
                                blank=True,
                                default=None)
