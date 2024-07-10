@@ -151,7 +151,9 @@ DJOSER = {
     'LOGIN_FIELD': 'email',
 }
 
-MAX_NAME_LENGTH = 150
+MAX_USERS_NAMES_LENGTH = 150
+MAX_INGREGIENTS_NAME = 128
+MAX_MEASUREMENT_NAME = 64
 MAX_EMAIL_LENGTH = 254
 RESPONSE_FOLLOW_MSGS = {
     'CHECK constraint failed: prevent_self_follow': 'User can\'t subscribe himself',

@@ -9,10 +9,10 @@ class User(AbstractUser):
     email = models.EmailField(
         max_length=settings.MAX_EMAIL_LENGTH,
         unique=True)
-    first_name = models.CharField(max_length=settings.MAX_NAME_LENGTH)
-    last_name = models.CharField(max_length=settings.MAX_NAME_LENGTH)
+    first_name = models.CharField(max_length=settings.MAX_USERS_NAMES_LENGTH)
+    last_name = models.CharField(max_length=settings.MAX_USERS_NAMES_LENGTH)
     username = models.CharField(
-        max_length=settings.MAX_NAME_LENGTH,
+        max_length=settings.MAX_USERS_NAMES_LENGTH,
         unique=True,
         validators=(
             UnicodeUsernameValidator(),
@@ -72,3 +72,22 @@ class Subscription(models.Model):
 
     def __str__(self):
         return f'{self.subscriber} подписан на {self.subscription}'
+
+
+class Ingredient(models.Model):
+    """Model for ingredients."""
+
+    name = models.CharField(
+        verbose_name='Название',
+        unique=True,
+        max_length=settings.MAX_INGREGIENTS_NAME)
+    measurement_unit = models.CharField(
+        verbose_name='Единица измерения',
+        max_length=settings.MAX_MEASUREMENT_NAME)
+
+    class Meta:
+        verbose_name = 'Ингредиент'
+        verbose_name_plural = 'Ингредиенты'
+
+    def __str__(self):
+        return f'{self.name} в {self.measurement_unit}'

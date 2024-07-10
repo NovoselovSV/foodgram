@@ -8,8 +8,12 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from core.models import Subscription
-from .serializers import AvatarSerializer, UserReadSerializer, UserWriteSerializer
+from core.models import Ingredient, Subscription
+from .serializers import (
+    AvatarSerializer,
+    IngredientSerializer,
+    UserReadSerializer,
+    UserWriteSerializer)
 
 User = get_user_model()
 
@@ -74,8 +78,8 @@ class UserViewSet(
                 return Response(
                     data={'errors': settings.RESPONSE_FOLLOW_MSGS[e.args[0]]},
                     status=status.HTTP_400_BAD_REQUEST)
-
             return self.get_subscription_response(request, pk)
+
         try:
             Subscription.objects.get(
                 subscription=subscription,
@@ -115,3 +119,11 @@ class UserViewSet(
                 Subscription.objects.filter(
                     subscriber=self.request.user.id,
                     subscription=OuterRef('pk'))))
+
+
+class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet for reading ingredients."""
+
+    queryset = Ingredient.objects.all()
+    serializer_class = IngredientSerializer
+    pagination_class = None
