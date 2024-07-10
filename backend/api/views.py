@@ -8,10 +8,11 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from core.models import Ingredient, Subscription
+from core.models import Ingredient, Subscription, Tag
 from .serializers import (
     AvatarSerializer,
     IngredientSerializer,
+    TagSerializer,
     UserReadSerializer,
     UserWriteSerializer)
 
@@ -126,4 +127,12 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    pagination_class = None
+
+
+class TagViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet for reading tags."""
+
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
     pagination_class = None

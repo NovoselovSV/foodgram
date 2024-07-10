@@ -91,3 +91,23 @@ class Ingredient(models.Model):
 
     def __str__(self):
         return f'{self.name} в {self.measurement_unit}'
+
+
+class Tag(models.Model):
+    """Model for tag."""
+
+    name = models.CharField(
+        verbose_name='Название',
+        unique=True,
+        max_length=settings.MAX_TAGS_NAME)
+    slug = models.SlugField(
+        verbose_name='Уникальное название на латинице',
+        unique=True,
+        max_length=settings.MAX_TAGS_NAME)
+
+    class Meta:
+        verbose_name = 'Тег'
+        verbose_name_plural = 'Теги'
+
+    def __str__(self):
+        return self.name
