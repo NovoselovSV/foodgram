@@ -130,7 +130,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
     ingredients = IngredientReadConnectorSerializer(
         many=True, source='ingredient_many_table')
-    is_favorited = serializers.SerializerMethodField()
+    is_favorited = serializers.BooleanField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
     class Meta:
@@ -146,9 +146,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
             'image',
             'text',
             'cooking_time')
-
-    def get_is_favorited(self, recipe):
-        return False
 
     def get_is_in_shopping_cart(self, recipe):
         return False
@@ -182,7 +179,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             for record in data['ingredients']:
                 if record['ingredient'] in ingredient_types:
                     raise serializers.ValidationError(
-                        'Один ингридиент добавлен несколько раз')
+                        'Один ингредиент добавлен несколько раз')
                 ingredient_types.add(record['ingredient'])
         return data
 
@@ -226,6 +223,7 @@ class RecipeShortSerializer(serializers.ModelSerializer):
 
 class UserRecipeReadSerializer(UserReadSerializer):
     """Serializer for read user and his recipes info."""
+
     recipes = RecipeShortSerializer(many=True)
     recipes_count = serializers.IntegerField()
 

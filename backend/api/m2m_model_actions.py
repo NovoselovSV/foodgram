@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 
-def create_connection(*, model, **kwargs):
+def create_connection(model, **kwargs):
     """Create link in m2m model. If errors occure return response object."""
     try:
         model.objects.create(**kwargs)
@@ -16,7 +16,7 @@ def create_connection(*, model, **kwargs):
             status=status.HTTP_400_BAD_REQUEST)
 
 
-def delete_connection(*, model, **kwargs):
+def delete_connection(model, **kwargs):
     """Delete link in m2m model. If errors occure return response object."""
     try:
         model.objects.get(**kwargs).delete()

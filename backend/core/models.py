@@ -3,7 +3,8 @@ from django.contrib.auth.models import AbstractUser, UnicodeUsernameValidator
 from django.core.validators import MinValueValidator
 from django.db import models
 
-from .queryset import AddOptionsQuerySet
+
+from .queryset import AddOptionsUserQuerySet, AddOptionsRecipeQuerySet
 
 
 class User(AbstractUser):
@@ -38,7 +39,7 @@ class User(AbstractUser):
         related_name='favorited_by',
         verbose_name='Избранные рецепты')
 
-    objects = AddOptionsQuerySet().as_manager()
+    objects = AddOptionsUserQuerySet().as_manager()
 
     REQUIRED_FIELDS = (
         'email',
@@ -220,6 +221,8 @@ class Recipe(models.Model):
                      f'{settings.MIN_COOKING_TIME} минут')
         ),))
 
+    objects = AddOptionsRecipeQuerySet().as_manager()
+
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
@@ -253,4 +256,4 @@ class UserRecipeFavorite(models.Model):
         ]
 
     def __str__(self):
-        return f'{self.user} подписан на {self.recipe}'
+        return f'{self.user} добавил в избранное {self.recipe}'

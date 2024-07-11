@@ -1,6 +1,12 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Exists, ObjectDoesNotExist, OuterRef, Prefetch, Value
+from django.db.models import (
+    Count,
+    Exists,
+    ObjectDoesNotExist,
+    OuterRef,
+    Prefetch,
+    Value)
 from django.db.models.deletion import IntegrityError
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -9,7 +15,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import reverse
 
-from core.models import Ingredient, Recipe, RecipeIngredient, Subscription, Tag, UserRecipeFavorite
+from core.models import (
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    Subscription,
+    Tag,
+    UserRecipeFavorite)
 from .m2m_model_actions import create_connection, delete_connection
 from .serializers import (
     AvatarSerializer,
@@ -118,7 +130,7 @@ class UserViewSet(
 
     def get_queryset(self):
         return User.objects.add_is_subscribed_annotate(
-            self.request.user.id, 'pk')
+            self.request.user.id)
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -147,17 +159,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     # доделать is_favorited и is_in_shopping_cart
     def get_queryset(self):
-        return Recipe.objects.prefetch_related(
+        return (Recipe.objects.prefetch_related(
             Prefetch(
                 'author',
                 queryset=User.objects.add_is_subscribed_annotate(
-                    self.request.user.id,
-                    'pk')),
+                    self.request.user.id)),
             'tags',
             Prefetch(
                 'ingredient_many_table',
                 queryset=RecipeIngredient.
-                objects.select_related('ingredient')))
+                objects.select_related('ingredient'))).
+                add_is_favorited_annotate(self.request.user.id))
 
     @action(methods=('get',), detail=True, url_path='get-link')
     def get_link(self, request, pk):
@@ -178,10 +190,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
             error_response = create_connection(**connection_info)
             return error_response or Response(
                 data=RecipeShortSerializer(
-                    Recipe.objects.get(
-                        pk=pk),
-                    context={
-                        'request': request}).data,
+                    Recipe.objects.get(pk=pk),
+                    context={'request': request}).data,
                 status=status.HTTP_201_CREATED)
 
         error_response = delete_connection(**connection_info)
