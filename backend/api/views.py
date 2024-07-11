@@ -157,4 +157,5 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'tags',
             Prefetch(
                 'ingredient_many_table',
-                queryset=RecipeIngredient.objects.select_related('ingredient')))
+                queryset=RecipeIngredient.
+                objects.select_related('ingredient')))

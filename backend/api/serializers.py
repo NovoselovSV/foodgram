@@ -92,12 +92,14 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'slug')
 
 
-class IngredientWriteConnectSerializer(serializers.Serializer):
+class IngredientWriteConnectSerializer(serializers.ModelSerializer):
     """Serializer for write connection ingredient to recipe."""
 
-    id = serializers.PrimaryKeyRelatedField(
-        queryset=Ingredient.objects.all())
-    amount = serializers.IntegerField()
+    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all(), source='ingredient')
+
+    class Meta:
+        model = RecipeIngredient
+        fields = ('id', 'amount')
 
     def validate_amount(self, amount):
         if amount < settings.MIN_AMOUNT:
@@ -110,14 +112,14 @@ class IngredientWriteConnectSerializer(serializers.Serializer):
 class IngredientReadConnectorSerializer(serializers.ModelSerializer):
     """Serializer for read connection ingredient to recipe."""
 
-    id = serializers.IntegerField(source='ingredient.id')
-    name = serializers.CharField(source='ingredient.name')
-    measurement_unit = serializers.CharField(
-        source='ingredient.measurement_unit')
-
     class Meta:
         model = RecipeIngredient
-        fields = ('id', 'name', 'measurement_unit', 'amount')
+        fields = ('amount',)
+
+    def to_representation(self, connection):
+        ingredient_data = IngredientSerializer(connection.ingredient).data
+        amount_data = super().to_representation(connection)
+        return {**ingredient_data, **amount_data}
 
 
 class RecipeReadSerializer(serializers.ModelSerializer):
@@ -177,10 +179,10 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         if 'ingredients' in data:
             ingredient_types = set()
             for record in data['ingredients']:
-                if record['id'] in ingredient_types:
+                if record['ingredient'] in ingredient_types:
                     raise serializers.ValidationError(
                         'Один ингридиент добавлен несколько раз')
-                ingredient_types.add(record['id'])
+                ingredient_types.add(record['ingredient'])
         return data
 
     def create(self, validated_data):
@@ -189,10 +191,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags)
         for record in ingredients:
-            RecipeIngredient.objects.create(
-                recipe=recipe,
-                ingredient=record['id'],
-                amount=record['amount'])
+            RecipeIngredient.objects.create(recipe=recipe, **record)
         return recipe
 
     def update(self, instance, validated_data):
@@ -207,10 +206,8 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
                 instance.tags.add(tag)
         if 'ingredients' in validated_data:
             instance.ingredients.clear()
-            for ingredient in validated_data['ingredients']:
-                instance.ingredients.add(
-                    ingredient['id'], through_defaults={
-                        'amount': ingredient['amount']})
+            for record in validated_data['ingredients']:
+                RecipeIngredient.objects.create(recipe=instance, **record)
         instance.save()
         return instance
 
