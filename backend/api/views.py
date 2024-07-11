@@ -7,6 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.viewsets import reverse
 
 from core.models import Ingredient, Recipe, RecipeIngredient, Subscription, Tag
 from .serializers import (
@@ -159,3 +160,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 'ingredient_many_table',
                 queryset=RecipeIngredient.
                 objects.select_related('ingredient')))
+
+    @action(methods=('get',), detail=True, url_path='get-link')
+    def get_link(self, request, pk):
+        return Response(
+            data={'short-link': reverse('short-link',
+                                        kwargs={'pk': pk},
+                                        request=request)})
