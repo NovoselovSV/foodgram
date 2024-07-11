@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db.models import Exists, ObjectDoesNotExist, OuterRef
+from django.db.models import Exists, ObjectDoesNotExist, OuterRef, Prefetch, Value
 from django.db.models.deletion import IntegrityError
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -8,10 +8,12 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from core.models import Ingredient, Subscription, Tag
+from core.models import Ingredient, Recipe, RecipeIngredient, Subscription, Tag
 from .serializers import (
     AvatarSerializer,
     IngredientSerializer,
+    RecipeReadSerializer,
+    RecipeWriteSerializer,
     TagSerializer,
     UserReadSerializer,
     UserWriteSerializer)
@@ -95,6 +97,7 @@ class UserViewSet(
     def get_subscription_response(self, request, pk=None):
         queryset = self.get_queryset()
         if not pk:
+            # поправить
             queryset = queryset.filter(is_subscribed=True)
             many = True
         else:
@@ -115,11 +118,8 @@ class UserViewSet(
         return UserWriteSerializer
 
     def get_queryset(self):
-        return User.objects.annotate(
-            is_subscribed=Exists(
-                Subscription.objects.filter(
-                    subscriber=self.request.user.id,
-                    subscription=OuterRef('pk'))))
+        return User.objects.add_is_subscribed_annotate(
+            self.request.user.id, 'pk')
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -136,3 +136,25 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     pagination_class = None
+
+
+class RecipeViewSet(viewsets.ModelViewSet):
+    """ViewSet for recipes."""
+
+    def get_serializer_class(self):
+        if self.action in ('list', 'retrieve'):
+            return RecipeReadSerializer
+        return RecipeWriteSerializer
+
+    # доделать is_favorited и is_in_shopping_cart
+    def get_queryset(self):
+        return Recipe.objects.prefetch_related(
+            Prefetch(
+                'author',
+                queryset=User.objects.add_is_subscribed_annotate(
+                    self.request.user.id,
+                    'pk')),
+            'tags',
+            Prefetch(
+                'ingredient_many_table',
+                queryset=RecipeIngredient.objects.select_related('ingredient')))

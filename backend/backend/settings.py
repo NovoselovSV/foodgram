@@ -156,6 +156,9 @@ MAX_TAGS_NAME = 32
 MAX_INGREGIENTS_NAME = 128
 MAX_MEASUREMENT_NAME = 64
 MAX_EMAIL_LENGTH = 254
+MAX_RECIPE_NAME = 256
+MIN_COOKING_TIME = 1
+MIN_AMOUNT = 1
 RESPONSE_FOLLOW_MSGS = {
     'CHECK constraint failed: prevent_self_follow': 'User can\'t subscribe himself',
     'UNIQUE constraint failed: core_subscription.subscription_id, core_subscription.subscriber_id': 'You are already subscribed'

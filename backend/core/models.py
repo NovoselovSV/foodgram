@@ -1,6 +1,9 @@
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, UnicodeUsernameValidator
+from django.core.validators import MinValueValidator
 from django.db import models
+
+from .queryset import AddOptionsQuerySet
 
 
 class User(AbstractUser):
@@ -30,6 +33,8 @@ class User(AbstractUser):
                                blank=True,
                                default=None)
 
+    objects = AddOptionsQuerySet().as_manager()
+
     REQUIRED_FIELDS = (
         'email',
         'first_name',
@@ -49,12 +54,12 @@ class Subscription(models.Model):
     subscription = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='+',
+        related_name='subscriptions_many_table',
         verbose_name='Подписан на')
     subscriber = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='+',
+        related_name='subscribers_many_table',
         verbose_name='Пользователь')
 
     class Meta:
@@ -109,6 +114,110 @@ class Tag(models.Model):
     class Meta:
         verbose_name = 'Тег'
         verbose_name_plural = 'Теги'
+
+    def __str__(self):
+        return self.name
+
+
+class RecipeIngredient(models.Model):
+    """Many to many recipes to ingredients model with amount."""
+
+    recipe = models.ForeignKey(
+        'Recipe',
+        on_delete=models.CASCADE,
+        related_name='ingredient_many_table',
+        verbose_name='Рецепт')
+    ingredient = models.ForeignKey(
+        'Ingredient',
+        on_delete=models.PROTECT,
+        related_name='recipe_many_table',
+        verbose_name='Ингредиент')
+    amount = models.IntegerField(
+        verbose_name='Количество', validators=(
+            MinValueValidator(
+                limit_value=settings.MIN_AMOUNT, message=(
+                    'Количество ингредиента должно быть не меньше '
+                    f'{settings.MIN_COOKING_TIME} единицы')),))
+
+    class Meta:
+        verbose_name = 'Ингрединт в рецепте'
+        verbose_name_plural = 'Ингредиенты в рецептах'
+        constraints = [
+            models.UniqueConstraint(
+                name='recipe_ingredient_unique',
+                fields=['recipe', 'ingredient']
+            ),
+        ]
+
+    def __str__(self):
+        return (f'{self.recipe} содержит {self.ingredient} в '
+                f'количестве {self.amount} {self.ingredient.measurement_unit}')
+
+
+class RecipeTag(models.Model):
+    """Many to many recipes to tags model."""
+
+    recipe = models.ForeignKey(
+        'Recipe',
+        on_delete=models.CASCADE,
+        related_name='+',
+        verbose_name='Рецепт')
+    tag = models.ForeignKey(
+        'Tag',
+        on_delete=models.CASCADE,
+        related_name='+',
+        verbose_name='Тег')
+
+    class Meta:
+        verbose_name = 'Тег рецепта'
+        verbose_name_plural = 'Теги рецептов'
+        constraints = [
+            models.UniqueConstraint(
+                name='recipe_tag_unique',
+                fields=['recipe', 'tag']
+            ),
+        ]
+
+    def __str__(self):
+        return f'К {self.recipe} подключен тег {self.tag}'
+
+
+class Recipe(models.Model):
+    """Model for recipes."""
+
+    author = models.ForeignKey(
+        'User',
+        on_delete=models.CASCADE,
+        related_name='recipes',
+        verbose_name='Автор')
+    ingredients = models.ManyToManyField(
+        'Ingredient',
+        related_name='used_in_recipes',
+        through='RecipeIngredient',
+        verbose_name='Ингредиенты')
+    tags = models.ManyToManyField(
+        'Tag',
+        related_name='recipes',
+        through='RecipeTag',
+        verbose_name='Теги')
+    image = models.ImageField(
+        verbose_name='Изображение',
+        upload_to='recipes/images/')
+    name = models.CharField(
+        verbose_name='Название',
+        max_length=settings.MAX_RECIPE_NAME)
+    text = models.TextField(verbose_name='Описание')
+    cooking_time = models.IntegerField(
+        verbose_name='Время приготовления (в минутах)',
+        validators=(MinValueValidator(
+            limit_value=settings.MIN_COOKING_TIME,
+            message=('Время приготовления должно быть не меньше '
+                     f'{settings.MIN_COOKING_TIME} минут')
+        ),))
+
+    class Meta:
+        verbose_name = 'Рецепт'
+        verbose_name_plural = 'Рецепты'
 
     def __str__(self):
         return self.name
