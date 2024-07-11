@@ -159,8 +159,16 @@ MAX_EMAIL_LENGTH = 254
 MAX_RECIPE_NAME = 256
 MIN_COOKING_TIME = 1
 MIN_AMOUNT = 1
-RESPONSE_FOLLOW_MSGS = {
-    'CHECK constraint failed: prevent_self_follow': 'User can\'t subscribe himself',
-    'UNIQUE constraint failed: core_subscription.subscription_id, core_subscription.subscriber_id': 'You are already subscribed'
+MSG_SELF_FOLLOW_ERROR = 'CHECK constraint failed: prevent_self_follow'
+MSG_ALREADY_SUBSCRIBED_ERROR = (
+    'UNIQUE constraint failed: '
+    'core_subscription.subscription_id, core_subscription.subscriber_id')
+MSG_ALREADY_FAVORE_ERROR = (
+    'UNIQUE constraint failed: '
+    'core_userrecipefavorite.recipe_id, core_userrecipefavorite.user_id')
+ERROR_M2M_CONNECTION_MSGS = {
+    MSG_SELF_FOLLOW_ERROR: 'User can\'t subscribe himself',
+    MSG_ALREADY_SUBSCRIBED_ERROR: 'You are already subscribed',
+    MSG_ALREADY_FAVORE_ERROR: 'You are already favore it'
 }
-NOT_SUBSCRIBED_MSG = 'You wasn\'t subscribed'
+NOT_CONNECTED_MSG = 'You were not linked'

@@ -9,11 +9,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import reverse
 
-from core.models import Ingredient, Recipe, RecipeIngredient, Subscription, Tag
+from core.models import Ingredient, Recipe, RecipeIngredient, Subscription, Tag, UserRecipeFavorite
+from .m2m_model_actions import create_connection, delete_connection
 from .serializers import (
     AvatarSerializer,
     IngredientSerializer,
     RecipeReadSerializer,
+    RecipeShortSerializer,
     RecipeWriteSerializer,
     TagSerializer,
     UserReadSerializer,
@@ -74,28 +76,17 @@ class UserViewSet(
         # Вариант с сериализаторами не подходит так как структура ответа должна
         # быть "error": 'string'
         subscription = get_object_or_404(User, pk=pk)
-        if request.method == 'POST':
-            try:
-                Subscription.objects.create(
-                    subscription=subscription,
-                    subscriber=request.user)
-            except IntegrityError as error:
-                return Response(
-                    data={'errors':
-                          settings.RESPONSE_FOLLOW_MSGS[error.args[0]]},
-                    status=status.HTTP_400_BAD_REQUEST)
-            return self.get_subscription_response(request, pk)
+        connection_info = {'model': Subscription,
+                           'subscription': subscription,
+                           'subscriber': request.user}
 
-        try:
-            Subscription.objects.get(
-                subscription=subscription,
-                subscriber=request.user).delete()
-        except ObjectDoesNotExist:
-            return Response(
-                data={
-                    'errors': settings.NOT_SUBSCRIBED_MSG},
-                status=status.HTTP_400_BAD_REQUEST)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        if request.method == 'POST':
+            error_response = create_connection(**connection_info)
+            return error_response or self.get_subscription_response(
+                request, pk)
+
+        error_response = delete_connection(**connection_info)
+        return error_response or Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_subscription_response(self, request, pk=None):
         queryset = self.get_queryset().annotate(
@@ -174,3 +165,24 @@ class RecipeViewSet(viewsets.ModelViewSet):
             data={'short-link': reverse('short-link',
                                         kwargs={'pk': pk},
                                         request=request)})
+
+    @action(methods=('post', 'delete'), detail=True)
+    def favorite(self, request, pk):
+        connection_info = {
+            'model': UserRecipeFavorite,
+            'recipe': get_object_or_404(
+                Recipe,
+                pk=pk),
+            'user': request.user}
+        if request.method == 'POST':
+            error_response = create_connection(**connection_info)
+            return error_response or Response(
+                data=RecipeShortSerializer(
+                    Recipe.objects.get(
+                        pk=pk),
+                    context={
+                        'request': request}).data,
+                status=status.HTTP_201_CREATED)
+
+        error_response = delete_connection(**connection_info)
+        return error_response or Response(status=status.HTTP_204_NO_CONTENT)

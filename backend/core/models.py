@@ -32,6 +32,11 @@ class User(AbstractUser):
                                null=True,
                                blank=True,
                                default=None)
+    favorites = models.ManyToManyField(
+        'Recipe',
+        through='UserRecipeFavorite',
+        related_name='favorited_by',
+        verbose_name='Избранные рецепты')
 
     objects = AddOptionsQuerySet().as_manager()
 
@@ -221,3 +226,31 @@ class Recipe(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class UserRecipeFavorite(models.Model):
+    """Model for favorite recipe."""
+
+    recipe = models.ForeignKey(
+        'Recipe',
+        on_delete=models.CASCADE,
+        related_name='favorited_many_table',
+        verbose_name='Рецепт')
+    user = models.ForeignKey(
+        'User',
+        on_delete=models.CASCADE,
+        related_name='favorites_many_table',
+        verbose_name='Пользователь')
+
+    class Meta:
+        verbose_name = 'Избранное'
+        verbose_name_plural = 'Избранные'
+        constraints = [
+            models.UniqueConstraint(
+                name='recipe_user_unique',
+                fields=['recipe', 'user']
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.user} подписан на {self.recipe}'
