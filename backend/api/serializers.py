@@ -95,7 +95,8 @@ class TagSerializer(serializers.ModelSerializer):
 class IngredientWriteConnectSerializer(serializers.ModelSerializer):
     """Serializer for write connection ingredient to recipe."""
 
-    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all(), source='ingredient')
+    id = serializers.PrimaryKeyRelatedField(
+        queryset=Ingredient.objects.all(), source='ingredient')
 
     class Meta:
         model = RecipeIngredient
@@ -213,3 +214,20 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     def to_representation(self, recipe):
         return RecipeReadSerializer(recipe, context=self.context).data
+
+
+class RecipeShortSerializer(serializers.ModelSerializer):
+    """Serializer for short recipe info."""
+
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+
+class UserRecipeReadSerializer(UserReadSerializer):
+    """Serializer for read user and his recipes info."""
+    recipes = RecipeShortSerializer(many=True)
+    recipes_count = serializers.IntegerField()
+
+    class Meta(UserReadSerializer.Meta):
+        fields = UserReadSerializer.Meta.fields + ('recipes', 'recipes_count')

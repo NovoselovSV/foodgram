@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db.models import Exists, ObjectDoesNotExist, OuterRef, Prefetch, Value
+from django.db.models import Count, Exists, ObjectDoesNotExist, OuterRef, Prefetch, Value
 from django.db.models.deletion import IntegrityError
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -17,6 +17,7 @@ from .serializers import (
     RecipeWriteSerializer,
     TagSerializer,
     UserReadSerializer,
+    UserRecipeReadSerializer,
     UserWriteSerializer)
 
 User = get_user_model()
@@ -78,9 +79,10 @@ class UserViewSet(
                 Subscription.objects.create(
                     subscription=subscription,
                     subscriber=request.user)
-            except IntegrityError as e:
+            except IntegrityError as error:
                 return Response(
-                    data={'errors': settings.RESPONSE_FOLLOW_MSGS[e.args[0]]},
+                    data={'errors':
+                          settings.RESPONSE_FOLLOW_MSGS[error.args[0]]},
                     status=status.HTTP_400_BAD_REQUEST)
             return self.get_subscription_response(request, pk)
 
@@ -96,19 +98,24 @@ class UserViewSet(
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_subscription_response(self, request, pk=None):
-        queryset = self.get_queryset()
-        if not pk:
-            # поправить
-            queryset = queryset.filter(is_subscribed=True)
-            many = True
-        else:
-            queryset = queryset.get(pk=pk)
-            many = False
-        serializer = UserReadSerializer(
-            queryset, context={
-                'request': request}, many=many)
-        # add receipts
-        return Response(serializer.data)
+        queryset = self.get_queryset().annotate(
+            recipes_count=Count('recipes')).prefetch_related('recipes').filter(
+            is_subscribed=True)
+        if pk:
+            return self.get_current_subscription(queryset, request, pk)
+        return self.get_all_subscriptions(queryset, request)
+
+    def get_current_subscription(self, queryset, request, pk):
+        return Response(
+            data=UserRecipeReadSerializer(
+                queryset.get(pk=pk), context={'request': request}).data,
+            status=status.HTTP_201_CREATED)
+
+    def get_all_subscriptions(self, queryset, request):
+        return self.get_paginated_response(
+            UserRecipeReadSerializer(
+                self.paginate_queryset(queryset), context={
+                    'request': request}, many=True).data)
 
     def perform_update(self, serializer):
         serializer.save()
