@@ -4,7 +4,9 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 
-from .queryset import AddOptionsUserQuerySet, AddOptionsRecipeQuerySet
+from .querysets_n_managers import (
+    AddOptionsUserManager,
+    AddOptionsRecipeQuerySet)
 
 
 class User(AbstractUser):
@@ -32,7 +34,7 @@ class User(AbstractUser):
                                verbose_name='Аватар',
                                null=True,
                                blank=True,
-                               default=None)
+                               default='users/default.png')
     favorites = models.ManyToManyField(
         'Recipe',
         through='UserRecipeFavorite',
@@ -44,7 +46,7 @@ class User(AbstractUser):
         related_name='in_shopping_list_by',
         verbose_name='Рецепты в листе покупок')
 
-    objects = AddOptionsUserQuerySet().as_manager()
+    objects = AddOptionsUserManager()
 
     REQUIRED_FIELDS = (
         'email',
@@ -159,6 +161,7 @@ class RecipeIngredient(models.Model):
                 fields=['recipe', 'ingredient']
             ),
         ]
+        ordering = ('-id',)
 
     def __str__(self):
         return (f'{self.recipe} содержит {self.ingredient} в '

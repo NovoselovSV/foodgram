@@ -1,11 +1,12 @@
+from django.contrib.auth.models import UserManager
 from django.db import models
 from django.db.models import Exists, OuterRef
 
 from . import models as project_models
 
 
-class AddOptionsUserQuerySet(models.QuerySet):
-    """Queryset for additional options while making query with User model."""
+class AddOptionsUserManager(UserManager):
+    """Manager for additional options while making query with User model."""
 
     def add_is_subscribed_annotate(self, potential_subscriber_id):
         return self.annotate(
