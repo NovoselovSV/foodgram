@@ -12,11 +12,14 @@ from django.db.models import (
     Value)
 from django.db.models.deletion import IntegrityError
 from django.http import HttpResponse
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import (
+    IsAuthenticated, IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
+from rest_framework.filters import SearchFilter
 from rest_framework.viewsets import reverse
 
 from core.models import (
@@ -27,10 +30,12 @@ from core.models import (
     Tag,
     UserRecipeFavorite,
     UserRecipeShoppingList)
+from .filters import RecipeFilter, OrderingSearchFilter
 from .m2m_model_actions import (
     create_connection,
     create_or_delete_connection_shortcut,
     delete_connection)
+from .permissions import ReadOnly, AuthorOnly
 from .serializers import (
     AvatarSerializer,
     IngredientSerializer,
@@ -77,7 +82,7 @@ class UserViewSet(
         self.perform_update(serializer)
         return Response(serializer.data)
 
-    @action(('post',), detail=False)
+    @action(('post',), detail=False, permission_classes=(IsAuthenticated,))
     def set_password(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -137,6 +142,8 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    filter_backends = (OrderingSearchFilter,)
+    search_fields = ('^name', 'name')
     pagination_class = None
 
 
@@ -151,12 +158,16 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     """ViewSet for recipes."""
 
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = RecipeFilter
+    permission_classes = (IsAuthenticatedOrReadOnly,
+                          AuthorOnly | ReadOnly,)
+
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
             return RecipeReadSerializer
         return RecipeWriteSerializer
 
-    # доделать is_favorited и is_in_shopping_cart
     def get_queryset(self):
         return (Recipe.objects.prefetch_related(
             Prefetch(
@@ -177,7 +188,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
                                         kwargs={'pk': pk},
                                         request=request)})
 
-    @action(methods=('post', 'delete'), detail=True)
+    @action(methods=('post', 'delete'), detail=True,
+            permission_classes=(IsAuthenticated,))
     def favorite(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
         connection_info = {
@@ -190,7 +202,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipe,
             RecipeShortSerializer)
 
-    @action(methods=('post', 'delete'), detail=True)
+    @action(methods=('post', 'delete'), detail=True,
+            permission_classes=(IsAuthenticated,))
     def shopping_cart(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
         connection_info = {

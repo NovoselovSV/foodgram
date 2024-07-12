@@ -35,7 +35,7 @@ def create_or_delete_connection_shortcut(
         response_pk=None):
     if request.method == 'POST':
         error_response = create_connection(model=model, **connection_m2m_info)
-        if response_pk:
+        if not error_response and response_pk:
             response_object = response_object.get(pk=response_pk)
         return error_response or Response(
             data=response_serializer_cls(
