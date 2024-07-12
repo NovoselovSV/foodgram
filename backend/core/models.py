@@ -161,7 +161,6 @@ class RecipeIngredient(models.Model):
                 fields=['recipe', 'ingredient']
             ),
         ]
-        ordering = ('-id',)
 
     def __str__(self):
         return (f'{self.recipe} содержит {self.ingredient} в '
@@ -228,15 +227,17 @@ class Recipe(models.Model):
             message=('Время приготовления должно быть не меньше '
                      f'{settings.MIN_COOKING_TIME} минут')
         ),))
+    pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
 
     objects = AddOptionsRecipeQuerySet().as_manager()
 
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
+        ordering = ('-pub_date',)
 
     def __str__(self):
-        return self.name
+        return f'{self.name} созданный {self.author.username}'
 
 
 class UserRecipeFavorite(models.Model):
