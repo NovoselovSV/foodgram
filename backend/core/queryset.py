@@ -24,3 +24,14 @@ class AddOptionsRecipeQuerySet(models.QuerySet):
                 project_models.UserRecipeFavorite.objects.filter(
                     recipe_id=OuterRef('pk'),
                     user_id=user_id)))
+
+    def add_is_in_shopping_cart_annotate(self, user_id):
+        return self.annotate(
+            is_in_shopping_cart=Exists(
+                project_models.UserRecipeShoppingList.objects.filter(
+                    recipe_id=OuterRef('pk'),
+                    user_id=user_id)))
+
+    def add_all_annotations(self, user_id):
+        return self.add_is_favorited_annotate(
+            user_id).add_is_in_shopping_cart_annotate(user_id)

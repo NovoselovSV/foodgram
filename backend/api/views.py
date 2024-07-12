@@ -164,7 +164,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 'ingredient_many_table',
                 queryset=RecipeIngredient.
                 objects.select_related('ingredient'))).
-                add_is_favorited_annotate(self.request.user.id))
+                add_all_annotations(self.request.user.id))
 
     @action(methods=('get',), detail=True, url_path='get-link')
     def get_link(self, request, pk):

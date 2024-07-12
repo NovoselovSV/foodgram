@@ -131,7 +131,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     ingredients = IngredientReadConnectorSerializer(
         many=True, source='ingredient_many_table')
     is_favorited = serializers.BooleanField()
-    is_in_shopping_cart = serializers.SerializerMethodField()
+    is_in_shopping_cart = serializers.BooleanField()
 
     class Meta:
         model = Recipe
@@ -146,9 +146,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
             'image',
             'text',
             'cooking_time')
-
-    def get_is_in_shopping_cart(self, recipe):
-        return False
 
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
