@@ -1,3 +1,5 @@
+import csv
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.models import (
@@ -6,8 +8,10 @@ from django.db.models import (
     ObjectDoesNotExist,
     OuterRef,
     Prefetch,
+    Sum,
     Value)
 from django.db.models.deletion import IntegrityError
+from django.http import HttpResponse
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
@@ -198,3 +202,24 @@ class RecipeViewSet(viewsets.ModelViewSet):
             request,
             recipe,
             RecipeShortSerializer)
+
+    @action(('get',), detail=False, permission_classes=(IsAuthenticated,))
+    def download_shopping_cart(self, request):
+        ingredients = RecipeIngredient.objects.filter(
+            recipe__in_shopping_list_by=request.user).values(
+            'ingredient__name',
+            'ingredient__measurement_unit').annotate(
+            total_amount=Sum('amount'))
+        with open('temp.csv', 'w', newline='') as csvfile:
+            fieldnames = (
+                'Название ингредиента',
+                'Единицы измерения',
+                'Количество')
+            writer = csv.writer(csvfile)
+            writer.writerow(fieldnames)
+            writer.writerows(ingredient.values() for ingredient in ingredients)
+        with open('temp.csv', 'r', newline='') as csvfile:
+            return HttpResponse(csvfile, content_type='text/csv')
+
+        return Response(data={'errors': 'Site error'},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)

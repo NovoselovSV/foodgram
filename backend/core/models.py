@@ -38,6 +38,11 @@ class User(AbstractUser):
         through='UserRecipeFavorite',
         related_name='favorited_by',
         verbose_name='Избранные рецепты')
+    in_shopping_list = models.ManyToManyField(
+        'Recipe',
+        through='UserRecipeShoppingList',
+        related_name='in_shopping_list_by',
+        verbose_name='Рецепты в листе покупок')
 
     objects = AddOptionsUserQuerySet().as_manager()
 
