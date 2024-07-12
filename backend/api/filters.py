@@ -41,15 +41,18 @@ class OrderingSearchFilter(SearchFilter):
 
         base = queryset
         conditions = []
+        # custom line
         orderings = []
         for search_term in search_terms:
             queries = [
                 models.Q(**{orm_lookup: search_term})
                 for orm_lookup in orm_lookups
             ]
+            # custom line
             orderings.append(queries)
             conditions.append(reduce(operator.or_, queries))
         queryset = queryset.filter(reduce(operator.and_, conditions))
+        # custom lines
         queryset = (queryset.annotate(
             order_mark=Case(
                 *(When(q_object, then=Value(order_mark))
