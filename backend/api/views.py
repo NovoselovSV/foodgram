@@ -21,8 +21,12 @@ from core.models import (
     RecipeIngredient,
     Subscription,
     Tag,
-    UserRecipeFavorite)
-from .m2m_model_actions import create_connection, delete_connection
+    UserRecipeFavorite,
+    UserRecipeShoppingList)
+from .m2m_model_actions import (
+    create_connection,
+    create_or_delete_connection_shortcut,
+    delete_connection)
 from .serializers import (
     AvatarSerializer,
     IngredientSerializer,
@@ -80,7 +84,7 @@ class UserViewSet(
 
     @action(('get',), detail=False, permission_classes=(IsAuthenticated,))
     def subscriptions(self, request):
-        return self.get_subscription_response(request)
+        return self.get_all_subscriptions_response(request)
 
     @action(('post', 'delete'), detail=True,
             permission_classes=(IsAuthenticated,))
@@ -88,37 +92,28 @@ class UserViewSet(
         # Вариант с сериализаторами не подходит так как структура ответа должна
         # быть "error": 'string'
         subscription = get_object_or_404(User, pk=pk)
-        connection_info = {'model': Subscription,
-                           'subscription': subscription,
+        connection_info = {'subscription': subscription,
                            'subscriber': request.user}
+        return create_or_delete_connection_shortcut(
+            Subscription,
+            connection_info,
+            request,
+            self.get_subscription_queryset(),
+            UserRecipeReadSerializer,
+            response_pk=pk)
 
-        if request.method == 'POST':
-            error_response = create_connection(**connection_info)
-            return error_response or self.get_subscription_response(
-                request, pk)
-
-        error_response = delete_connection(**connection_info)
-        return error_response or Response(status=status.HTTP_204_NO_CONTENT)
-
-    def get_subscription_response(self, request, pk=None):
-        queryset = self.get_queryset().annotate(
+    def get_subscription_queryset(self):
+        return self.get_queryset().annotate(
             recipes_count=Count('recipes')).prefetch_related('recipes').filter(
             is_subscribed=True)
-        if pk:
-            return self.get_current_subscription(queryset, request, pk)
-        return self.get_all_subscriptions(queryset, request)
 
-    def get_current_subscription(self, queryset, request, pk):
-        return Response(
-            data=UserRecipeReadSerializer(
-                queryset.get(pk=pk), context={'request': request}).data,
-            status=status.HTTP_201_CREATED)
-
-    def get_all_subscriptions(self, queryset, request):
+    def get_all_subscriptions_response(self, request):
         return self.get_paginated_response(
             UserRecipeReadSerializer(
-                self.paginate_queryset(queryset), context={
-                    'request': request}, many=True).data)
+                self.paginate_queryset(
+                    self.get_subscription_queryset()),
+                context={'request': request},
+                many=True).data)
 
     def perform_update(self, serializer):
         serializer.save()
@@ -180,19 +175,26 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(methods=('post', 'delete'), detail=True)
     def favorite(self, request, pk):
+        recipe = get_object_or_404(Recipe, pk=pk)
         connection_info = {
-            'model': UserRecipeFavorite,
-            'recipe': get_object_or_404(
-                Recipe,
-                pk=pk),
+            'recipe': recipe,
             'user': request.user}
-        if request.method == 'POST':
-            error_response = create_connection(**connection_info)
-            return error_response or Response(
-                data=RecipeShortSerializer(
-                    Recipe.objects.get(pk=pk),
-                    context={'request': request}).data,
-                status=status.HTTP_201_CREATED)
+        return create_or_delete_connection_shortcut(
+            UserRecipeFavorite,
+            connection_info,
+            request,
+            recipe,
+            RecipeShortSerializer)
 
-        error_response = delete_connection(**connection_info)
-        return error_response or Response(status=status.HTTP_204_NO_CONTENT)
+    @action(methods=('post', 'delete'), detail=True)
+    def shopping_cart(self, request, pk):
+        recipe = get_object_or_404(Recipe, pk=pk)
+        connection_info = {
+            'recipe': recipe,
+            'user': request.user}
+        return create_or_delete_connection_shortcut(
+            UserRecipeShoppingList,
+            connection_info,
+            request,
+            recipe,
+            RecipeShortSerializer)

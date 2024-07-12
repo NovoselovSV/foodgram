@@ -166,9 +166,13 @@ MSG_ALREADY_SUBSCRIBED_ERROR = (
 MSG_ALREADY_FAVORE_ERROR = (
     'UNIQUE constraint failed: '
     'core_userrecipefavorite.recipe_id, core_userrecipefavorite.user_id')
+MSG_ALREADY_IN_SHOPPING_LIST = (
+    'UNIQUE constraint failed: '
+    'core_userrecipeshoppinglist.recipe_id, core_userrecipeshoppinglist.user_id')
 ERROR_M2M_CONNECTION_MSGS = {
     MSG_SELF_FOLLOW_ERROR: 'User can\'t subscribe himself',
     MSG_ALREADY_SUBSCRIBED_ERROR: 'You are already subscribed',
-    MSG_ALREADY_FAVORE_ERROR: 'You are already favore it'
+    MSG_ALREADY_FAVORE_ERROR: 'You are already favore it',
+    MSG_ALREADY_IN_SHOPPING_LIST: 'You are already added it in shoppind list'
 }
-NOT_CONNECTED_MSG = 'You were not linked'
+NOT_CONNECTED_MSG = 'You were not linked that way to it'

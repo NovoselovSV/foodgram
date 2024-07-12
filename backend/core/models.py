@@ -250,10 +250,38 @@ class UserRecipeFavorite(models.Model):
         verbose_name_plural = 'Избранные'
         constraints = [
             models.UniqueConstraint(
-                name='recipe_user_unique',
+                name='recipe_user_favorite_unique',
                 fields=['recipe', 'user']
             ),
         ]
 
     def __str__(self):
         return f'{self.user} добавил в избранное {self.recipe}'
+
+
+class UserRecipeShoppingList(models.Model):
+    """Model for recipe in shopping list."""
+
+    recipe = models.ForeignKey(
+        'Recipe',
+        on_delete=models.CASCADE,
+        related_name='shopped_many_table',
+        verbose_name='Рецепт')
+    user = models.ForeignKey(
+        'User',
+        on_delete=models.CASCADE,
+        related_name='shopping_many_table',
+        verbose_name='Пользователь')
+
+    class Meta:
+        verbose_name = 'Список покупок'
+        verbose_name_plural = 'Списки покупок'
+        constraints = [
+            models.UniqueConstraint(
+                name='recipe_user_shopping_unique',
+                fields=['recipe', 'user']
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.user} добавил в список покупок {self.recipe}'

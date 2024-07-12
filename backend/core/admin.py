@@ -9,12 +9,14 @@ from .models import (
     Subscription,
     Tag,
     User,
-    UserRecipeFavorite)
+    UserRecipeFavorite,
+    UserRecipeShoppingList)
 
 admin.site.register(Subscription)
 admin.site.register(Tag)
 admin.site.register(Ingredient)
 admin.site.register(RecipeIngredient)
+admin.site.register(UserRecipeShoppingList)
 admin.site.register(UserRecipeFavorite)
 admin.site.register(RecipeTag)
 admin.site.register(Recipe)

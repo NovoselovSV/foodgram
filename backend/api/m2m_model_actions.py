@@ -24,3 +24,24 @@ def delete_connection(model, **kwargs):
         return Response(
             data={'errors': settings.NOT_CONNECTED_MSG},
             status=status.HTTP_400_BAD_REQUEST)
+
+
+def create_or_delete_connection_shortcut(
+        model,
+        connection_m2m_info,
+        request,
+        response_object,
+        response_serializer_cls,
+        response_pk=None):
+    if request.method == 'POST':
+        error_response = create_connection(model=model, **connection_m2m_info)
+        if response_pk:
+            response_object = response_object.get(pk=response_pk)
+        return error_response or Response(
+            data=response_serializer_cls(
+                response_object,
+                context={'request': request}).data,
+            status=status.HTTP_201_CREATED)
+
+    error_response = delete_connection(model=model, **connection_m2m_info)
+    return error_response or Response(status=status.HTTP_204_NO_CONTENT)
