@@ -43,6 +43,7 @@ from .serializers import (
     RecipeShortSerializer,
     RecipeWriteSerializer,
     TagSerializer,
+    UserPasswordWriteOnly,
     UserReadSerializer,
     UserRecipeReadSerializer,
     UserWriteSerializer)
@@ -81,7 +82,7 @@ class UserViewSet(
 
     @action(('post',), detail=False, permission_classes=(IsAuthenticated,))
     def set_password(self, request):
-        serializer = self.get_serializer(data=request.data)
+        serializer = UserPasswordWriteOnly(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         self.request.user.set_password(serializer.data['new_password'])

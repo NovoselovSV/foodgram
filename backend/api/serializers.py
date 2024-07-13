@@ -37,6 +37,13 @@ class UserWriteSerializer(UserCreateSerializer):
         read_only_fields = ('id',)
 
 
+class UserPasswordWriteOnly(serializers.Serializer):
+    """Serializer for user password."""
+
+    new_password = serializers.CharField()
+    current_password = serializers.CharField()
+
+
 class Base64ImageField(serializers.ImageField):
     """Base64 to image field convertor."""
 
