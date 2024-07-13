@@ -167,6 +167,13 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             'cooking_time')
 
     def validate(self, data):
+        if 'tags' in data:
+            tag_types = set()
+            for tag in data['tags']:
+                if tag in tag_types:
+                    raise serializers.ValidationError(
+                        'Один тег добавлен несколько раз')
+                tag_types.add(tag)
         if 'ingredients' in data:
             ingredient_types = set()
             for record in data['ingredients']:
@@ -220,8 +227,19 @@ class RecipeShortSerializer(serializers.ModelSerializer):
 class UserRecipeReadSerializer(UserReadSerializer):
     """Serializer for read user and his recipes info."""
 
-    recipes = RecipeShortSerializer(many=True)
+    recipes = serializers.SerializerMethodField()
     recipes_count = serializers.IntegerField()
 
     class Meta(UserReadSerializer.Meta):
         fields = UserReadSerializer.Meta.fields + ('recipes', 'recipes_count')
+
+    def get_recipes(self, user):
+        try:
+            recipes_limit = int(self.context['request'].query_params.get(
+                'recipes_limit'))
+        except (ValueError, TypeError):
+            recipes_limit = None
+        serializer = RecipeShortSerializer(user.recipes, many=True)
+        if recipes_limit:
+            return serializer.data[:recipes_limit]
+        return serializer.data

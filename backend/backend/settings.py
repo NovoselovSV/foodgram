@@ -118,6 +118,8 @@ REST_FRAMEWORK = {
 
     'DEFAULT_PAGINATION_CLASS': 'api.paginators.PagePaginationWithLimit',
 
+    'SEARCH_PARAM': 'name',
+
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ],

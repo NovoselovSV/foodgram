@@ -4,12 +4,8 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.models import (
     Count,
-    Exists,
-    ObjectDoesNotExist,
-    OuterRef,
     Prefetch,
-    Sum,
-    Value)
+    Sum)
 from django.db.models.deletion import IntegrityError
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
@@ -31,10 +27,7 @@ from core.models import (
     UserRecipeFavorite,
     UserRecipeShoppingList)
 from .filters import RecipeFilter, OrderingSearchFilter
-from .m2m_model_actions import (
-    create_connection,
-    create_or_delete_connection_shortcut,
-    delete_connection)
+from .m2m_model_actions import create_or_delete_connection_shortcut
 from .permissions import ReadOnly, AuthorOnly
 from .serializers import (
     AvatarSerializer,
@@ -85,6 +78,11 @@ class UserViewSet(
         serializer = UserPasswordWriteOnly(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        user = self.request.user
+        if not user.check_password(serializer.data['current_password']):
+            return Response(
+                data={'error': 'Wrong password'},
+                status=status.HTTP_400_BAD_REQUEST)
         self.request.user.set_password(serializer.data['new_password'])
         self.request.user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)

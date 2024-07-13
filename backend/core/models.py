@@ -3,7 +3,6 @@ from django.contrib.auth.models import AbstractUser, UnicodeUsernameValidator
 from django.core.validators import MinValueValidator
 from django.db import models
 
-
 from .querysets_n_managers import (
     AddOptionsUserManager,
     AddOptionsRecipeQuerySet)
