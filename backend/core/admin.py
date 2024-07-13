@@ -15,10 +15,14 @@ from .models import (
 
 
 class CustomUserAdmin(UserAdmin):
+    """Custom display for user model in admin zone."""
+
     search_fields = ('username', 'email')
 
 
 class RecipeAdmin(admin.ModelAdmin):
+    """Custom display for recipe model in admin zone."""
+
     search_fields = ('author.username', 'name')
     list_filter = ('tags',)
     readonly_fields = ('is_favorited_count',)
@@ -29,6 +33,8 @@ class RecipeAdmin(admin.ModelAdmin):
 
 
 class IngredientAdmin(admin.ModelAdmin):
+    """Custom display for ingredient model in admin zone."""
+
     list_display = ('name', 'measurement_unit')
     search_fields = ('name',)
 

@@ -95,8 +95,6 @@ class UserViewSet(
     @action(('post', 'delete'), detail=True,
             permission_classes=(IsAuthenticated,))
     def subscribe(self, request, pk):
-        # Вариант с сериализаторами не подходит так как структура ответа должна
-        # быть "error": 'string'
         subscription = get_object_or_404(User, pk=pk)
         connection_info = {'subscription': subscription,
                            'subscriber': request.user}

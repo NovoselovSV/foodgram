@@ -2,8 +2,9 @@ import operator
 from functools import reduce
 
 from django.db import models
-from django.db.models.aggregates import Case, When
 from django.db.models import Value
+from django.db.models.aggregates import Case, When
+from rest_framework.compat import distinct
 from rest_framework.filters import SearchFilter
 from django_filters import rest_framework as filters
 
@@ -11,6 +12,8 @@ from core.models import Recipe, Tag
 
 
 class RecipeFilter(filters.FilterSet):
+    """Filter to Recipe viewset."""
+
     is_favorited = filters.BooleanFilter(label='is_favorited')
     is_in_shopping_cart = filters.BooleanFilter(label='is_in_shopping_cart')
     tags = filters.ModelMultipleChoiceFilter(
@@ -27,7 +30,7 @@ class OrderingSearchFilter(SearchFilter):
     """Search filter for ordering by seach fields."""
 
     def filter_queryset(self, request, queryset, view):
-        """Copy of standart filter_queryset. Used to implemend logic."""
+        """Copy of standart filter_queryset. Used to implement logic."""
         search_fields = self.get_search_fields(view, request)
         search_terms = self.get_search_terms(request)
 
