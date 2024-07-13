@@ -165,22 +165,37 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             'image',
             'text',
             'cooking_time')
+        patch_required_fields = (
+            'tags',
+            'ingredients',
+            'name',
+            'text',
+            'cooking_time')
 
     def validate(self, data):
-        if 'tags' in data:
-            tag_types = set()
-            for tag in data['tags']:
-                if tag in tag_types:
-                    raise serializers.ValidationError(
-                        'Один тег добавлен несколько раз')
-                tag_types.add(tag)
-        if 'ingredients' in data:
-            ingredient_types = set()
-            for record in data['ingredients']:
-                if record['ingredient'] in ingredient_types:
-                    raise serializers.ValidationError(
-                        'Один ингредиент добавлен несколько раз')
-                ingredient_types.add(record['ingredient'])
+        empty_errors = {}
+        for field_name in self.Meta.patch_required_fields:
+            if field_name not in data:
+                try:
+                    self.fail('required')
+                except serializers.ValidationError as e:
+                    empty_errors[field_name] = e.detail
+        if empty_errors:
+            raise serializers.ValidationError(empty_errors)
+
+        tag_types = set()
+        for tag in data['tags']:
+            if tag in tag_types:
+                raise serializers.ValidationError(
+                    'Один тег добавлен несколько раз')
+            tag_types.add(tag)
+
+        ingredient_types = set()
+        for record in data['ingredients']:
+            if record['ingredient'] in ingredient_types:
+                raise serializers.ValidationError(
+                    'Один ингредиент добавлен несколько раз')
+            ingredient_types.add(record['ingredient'])
         return data
 
     def create(self, validated_data):

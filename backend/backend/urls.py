@@ -13,7 +13,6 @@ urlpatterns = [
     path('s/<b64url:pk>/', redirect_short_link, name='short-link')
 ]
 
-# for debug
 if settings.DEBUG:
     import debug_toolbar
     urlpatterns += (path('__debug__/', include(debug_toolbar.urls)),)
