@@ -14,33 +14,17 @@ User = get_user_model()
 class UserReadSerializer(serializers.ModelSerializer):
     """User serializer for reading."""
 
-    is_subscribed = serializers.BooleanField(default=False)
-    # is_subscribed = serializers.SerializerMethodField()
+    # Реализован вариант который требует принудительной аннотации is_.* полей,
+    # а не через SerializerMethodField поскольку последний будет в неявном
+    # виде обращаться к БД (self.context['request'].user in
+    # recipe.<related_name>.user), что будет приводить к большому числу
+    # запросов и не будет вызывать ошибку если забыть сделать prefetch_related
+    is_subscribed = serializers.BooleanField()
 
     class Meta:
         model = User
         fields = ('email', 'id', 'username', 'first_name',
                   'last_name', 'is_subscribed', 'avatar')
-
-    # def get_is_subscribed(self, user):
-    #     # попытка через annotate во viewset queryset провалена, так как этот
-    #     # сериалайзер требуется в другом viewset, попытка через несколько
-    #     # annotate провалена так как annotate во viewset recipe не
-    #     # подхватывается во вложенном сериалайзере, попытка взять хешироанное
-    #     # значение запроса annotate провалена так как с annotate queryset не
-    #     # хэшируется, попытка доп. фильтрации на месте провалена так как так
-    #     # как создаются доп. запросы, попытка переопределить дефолтный менеджер
-    #     # как и другие махинации с моделью провалена так как для annotate нужна
-    #     # информация о запросе
-    #     # оставшиеся варианты или создавать доп запросы на поиск вхождений или
-    #     # самому искать эти вхождения (Последнее реализовано)
-    #     return bool(
-    #         list(
-    #             filter(
-    #                 lambda connection: (connection.subscriber_id == self.
-    #                                     context['request'].user.id),
-    #                 user.subscriptions_many_table.all()
-    #             )))
 
 
 class UserWriteSerializer(UserCreateSerializer):
@@ -130,8 +114,13 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
     ingredients = IngredientReadConnectorSerializer(
         many=True, source='ingredient_many_table')
-    is_favorited = serializers.BooleanField(default=False)
-    is_in_shopping_cart = serializers.BooleanField(default=False)
+    # Реализован вариант который требует принудительной аннотации is_.* полей,
+    # а не через SerializerMethodField поскольку последний будет в неявном
+    # виде обращаться к БД (self.context['request'].user in
+    # recipe.<related_name>.user), что будет приводить к большому числу
+    # запросов и не будет вызывать ошибку если забыть сделать prefetch_related
+    is_favorited = serializers.BooleanField()
+    is_in_shopping_cart = serializers.BooleanField()
 
     class Meta:
         model = Recipe
@@ -207,6 +196,9 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         return instance
 
     def to_representation(self, recipe):
+        recipe.author.is_subscribed = False
+        recipe.is_favorited = False
+        recipe.is_in_shopping_cart = False
         return RecipeReadSerializer(recipe, context=self.context).data
 
 

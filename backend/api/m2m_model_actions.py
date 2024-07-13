@@ -5,6 +5,11 @@ from rest_framework import status
 from rest_framework.response import Response
 
 
+# По заданию необходимо в случае ошибок возвращать ответ в виде 'errors':
+# 'message'. В связи с этим использование валидаторов или других
+# стандартных средств (как например переопределение глобального
+# обработчика ошибок) будет приводить к неверному поведению или являться
+# избыточным.
 def create_connection(model, **kwargs):
     """Create link in m2m model. If errors occure return response object."""
     try:
@@ -33,6 +38,7 @@ def create_or_delete_connection_shortcut(
         response_object,
         response_serializer_cls,
         response_pk=None):
+    """Shortcut for handle POST and DELETE requests to m2m tables."""
     if request.method == 'POST':
         error_response = create_connection(model=model, **connection_m2m_info)
         if not error_response and response_pk:

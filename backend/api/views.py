@@ -56,9 +56,6 @@ class UserViewSet(
         mixins.RetrieveModelMixin,
         viewsets.GenericViewSet):
     """ViewSet for user flows."""
-    # filter_backends = (filters.SearchFilter,)
-    # search_fields = ('username',)
-    # lookup_field = 'username'
 
     @action(detail=False, methods=('get',),
             permission_classes=(IsAuthenticated,))
