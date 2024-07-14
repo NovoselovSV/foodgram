@@ -30,7 +30,8 @@ class OrderingSearchFilter(SearchFilter):
     """Search filter for ordering by seach fields."""
 
     def filter_queryset(self, request, queryset, view):
-        """Copy of standart filter_queryset. Used to implement logic."""
+        """Adding annotation for ordering by it."""
+        queryset = super().filter_queryset(request, queryset, view)
         search_fields = self.get_search_fields(view, request)
         search_terms = self.get_search_terms(request)
 
@@ -42,31 +43,17 @@ class OrderingSearchFilter(SearchFilter):
             for search_field in search_fields
         ]
 
-        base = queryset
-        conditions = []
-        # custom line
         orderings = []
         for search_term in search_terms:
             queries = [
                 models.Q(**{orm_lookup: search_term})
                 for orm_lookup in orm_lookups
             ]
-            # custom line
             orderings.append(queries)
-            conditions.append(reduce(operator.or_, queries))
-        queryset = queryset.filter(reduce(operator.and_, conditions))
-        # custom lines
         queryset = (queryset.annotate(
             order_mark=Case(
                 *(When(q_object, then=Value(order_mark))
                     for order_mark,
                     q_object in enumerate(*orderings)))).
             order_by('order_mark'))
-
-        if self.must_call_distinct(queryset, search_fields):
-            # Filtering against a many-to-many field requires us to
-            # call queryset.distinct() in order to avoid duplicate items
-            # in the resulting queryset.
-            # We try to avoid this if possible, for performance reasons.
-            queryset = distinct(queryset, base)
         return queryset
