@@ -45,7 +45,7 @@ class UserViewSet(
             user, data=request.data, context={
                 'request': request})
         serializer.is_valid(raise_exception=True)
-        if user.avatar and user.avatar.name != 'default.png':
+        if user.avatar and user.avatar.name != 'users/default.png':
             user.avatar.delete(save=True)
         self.perform_update(serializer)
         return Response(serializer.data)
