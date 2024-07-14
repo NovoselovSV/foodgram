@@ -45,11 +45,12 @@ class OrderingSearchFilter(SearchFilter):
                 models.Q(**{orm_lookup: search_term})
                 for orm_lookup in orm_lookups
             ]
-            orderings.append(queries)
+            orderings.extend(queries)
+        first_order = models.Q(name__istartswith=' '.join(search_terms))
         queryset = (queryset.annotate(
-            order_mark=Case(
-                *(When(q_object, then=Value(order_mark))
+            order_mark=Case(When(first_order, then=Value(0)),
+                            *(When(q_object, then=Value(order_mark))
                     for order_mark,
-                    q_object in enumerate(*orderings)))).
-            order_by('order_mark'))
+                    q_object in enumerate(orderings, start=1)))).
+                    order_by('order_mark'))
         return queryset
