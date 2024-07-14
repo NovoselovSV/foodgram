@@ -27,7 +27,7 @@ jobs:
         python -m pip install --upgrade pip 
         pip install flake8==6.0.0 flake8-isort==6.0.0
         pip install -r ./backend/requirements.txt 
-    - name: Test with flake8 and django tests
+    - name: Test with flake8
       env:
         POSTGRES_USER: django_user
         POSTGRES_PASSWORD: django_password
@@ -69,7 +69,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Set up nodeJS
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v3
       with:
         node-version: 18
 
