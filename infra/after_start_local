@@ -1,0 +1,7 @@
+#!/bin/bash
+sudo docker compose exec backend python manage.py migrate
+sudo docker compose exec backend python manage.py collectstatic
+sudo docker compose exec backend cp -r /app/collected_static/. /backend_static/static/
+sudo docker compose exec backend cp /app/default.png /app/media/users/default.png
+sudo docker compose exec backend python manage.py load_from_csv -f ingredients.csv -m Ingredient
+sudo docker compose exec backend python manage.py createsuperuser --username admin --email admin@admin.admin --first_name admin --last_name admin
