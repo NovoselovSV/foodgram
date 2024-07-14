@@ -30,8 +30,7 @@ class User(AbstractUser):
     avatar = models.ImageField(upload_to='users/',
                                verbose_name='Аватар',
                                null=True,
-                               blank=True,
-                               default='users/default.png')
+                               blank=True)
     favorites = models.ManyToManyField(
         'Recipe',
         through='UserRecipeFavorite',

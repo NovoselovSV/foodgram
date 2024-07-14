@@ -13,7 +13,7 @@ class CustomUserAdmin(UserAdmin):
 class RecipeAdmin(admin.ModelAdmin):
     """Custom display for recipe model in admin zone."""
 
-    search_fields = ('author.username', 'name')
+    search_fields = ('author__username', 'name')
     list_filter = ('tags',)
     readonly_fields = ('is_favorited_count',)
 
