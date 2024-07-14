@@ -2,8 +2,8 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path, register_converter
 
-from core.views import redirect_short_link
 from core.converters import Base64Converter
+from core.views import redirect_short_link
 
 register_converter(Base64Converter, "b64url")
 

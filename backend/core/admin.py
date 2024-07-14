@@ -1,16 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import (
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    RecipeTag,
-    Subscription,
-    Tag,
-    User,
-    UserRecipeFavorite,
-    UserRecipeShoppingList)
+from . import models
 
 
 class CustomUserAdmin(UserAdmin):
@@ -38,12 +29,12 @@ class IngredientAdmin(admin.ModelAdmin):
     search_fields = ('name',)
 
 
-admin.site.register(Subscription)
-admin.site.register(Tag)
-admin.site.register(Ingredient, IngredientAdmin)
-admin.site.register(RecipeIngredient)
-admin.site.register(UserRecipeShoppingList)
-admin.site.register(UserRecipeFavorite)
-admin.site.register(RecipeTag)
-admin.site.register(Recipe, RecipeAdmin)
-admin.site.register(User, CustomUserAdmin)
+admin.site.register(models.Subscription)
+admin.site.register(models.Tag)
+admin.site.register(models.Ingredient, IngredientAdmin)
+admin.site.register(models.RecipeIngredient)
+admin.site.register(models.UserRecipeShoppingList)
+admin.site.register(models.UserRecipeFavorite)
+admin.site.register(models.RecipeTag)
+admin.site.register(models.Recipe, RecipeAdmin)
+admin.site.register(models.User, CustomUserAdmin)

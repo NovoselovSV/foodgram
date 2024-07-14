@@ -1,12 +1,8 @@
-import operator
-from functools import reduce
-
 from django.db import models
 from django.db.models import Value
 from django.db.models.aggregates import Case, When
-from rest_framework.compat import distinct
-from rest_framework.filters import SearchFilter
 from django_filters import rest_framework as filters
+from rest_framework.filters import SearchFilter
 
 from core.models import Recipe, Tag
 

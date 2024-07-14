@@ -3,9 +3,7 @@ from django.contrib.auth.models import AbstractUser, UnicodeUsernameValidator
 from django.core.validators import MinValueValidator
 from django.db import models
 
-from .querysets_n_managers import (
-    AddOptionsUserManager,
-    AddOptionsRecipeQuerySet)
+from . import querysets_n_managers as q_n_m
 
 
 class User(AbstractUser):
@@ -45,7 +43,7 @@ class User(AbstractUser):
         related_name='in_shopping_list_by',
         verbose_name='Рецепты в листе покупок')
 
-    objects = AddOptionsUserManager()
+    objects = q_n_m.AddOptionsUserManager()
 
     REQUIRED_FIELDS = (
         'email',
@@ -228,7 +226,7 @@ class Recipe(models.Model):
         ),))
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
 
-    objects = AddOptionsRecipeQuerySet().as_manager()
+    objects = q_n_m.AddOptionsRecipeQuerySet().as_manager()
 
     class Meta:
         verbose_name = 'Рецепт'

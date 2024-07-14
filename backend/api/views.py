@@ -1,45 +1,20 @@
 import csv
 
-from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db.models import (
-    Count,
-    Prefetch,
-    Sum)
-from django.db.models.deletion import IntegrityError
+from django.db.models import Count, Prefetch, Sum
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import mixins, status, viewsets
+from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import (
-    IsAuthenticated, IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
-from rest_framework.filters import SearchFilter
 from rest_framework.viewsets import reverse
 
-from core.models import (
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    Subscription,
-    Tag,
-    UserRecipeFavorite,
-    UserRecipeShoppingList)
-from .filters import RecipeFilter, OrderingSearchFilter
+from . import serializers
+from .filters import OrderingSearchFilter, RecipeFilter
 from .m2m_model_actions import create_or_delete_connection_shortcut
-from .permissions import ReadOnly, AuthorOnly
-from .serializers import (
-    AvatarSerializer,
-    IngredientSerializer,
-    RecipeReadSerializer,
-    RecipeShortSerializer,
-    RecipeWriteSerializer,
-    TagSerializer,
-    UserPasswordWriteOnly,
-    UserReadSerializer,
-    UserRecipeReadSerializer,
-    UserWriteSerializer)
+from .permissions import AuthorOnly, ReadOnly
+from core import models
 
 User = get_user_model()
 
@@ -52,19 +27,21 @@ class UserViewSet(
     """ViewSet for user flows."""
 
     @action(detail=False, methods=('get',),
-            permission_classes=(IsAuthenticated,))
+            permission_classes=(permissions.IsAuthenticated,))
     def me(self, request):
         self.kwargs['pk'] = request.user.id
         return self.retrieve(request)
 
-    @action(detail=False, methods=('put', 'delete'),
-            permission_classes=(IsAuthenticated,), url_path='me/avatar')
+    @action(detail=False,
+            methods=('put', 'delete'),
+            permission_classes=(permissions.IsAuthenticated,),
+            url_path='me/avatar')
     def avatar(self, request):
         user = request.user
         if request.method == 'DELETE':
             user.avatar.delete(save=True)
             return Response(status=status.HTTP_204_NO_CONTENT)
-        serializer = AvatarSerializer(
+        serializer = serializers.AvatarSerializer(
             user, data=request.data, context={
                 'request': request})
         serializer.is_valid(raise_exception=True)
@@ -73,9 +50,10 @@ class UserViewSet(
         self.perform_update(serializer)
         return Response(serializer.data)
 
-    @action(('post',), detail=False, permission_classes=(IsAuthenticated,))
+    @action(('post',), detail=False,
+            permission_classes=(permissions.IsAuthenticated,))
     def set_password(self, request):
-        serializer = UserPasswordWriteOnly(data=request.data)
+        serializer = serializers.UserPasswordWriteOnly(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         user = self.request.user
@@ -87,22 +65,23 @@ class UserViewSet(
         self.request.user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(('get',), detail=False, permission_classes=(IsAuthenticated,))
+    @action(('get',), detail=False,
+            permission_classes=(permissions.IsAuthenticated,))
     def subscriptions(self, request):
         return self.get_all_subscriptions_response(request)
 
     @action(('post', 'delete'), detail=True,
-            permission_classes=(IsAuthenticated,))
+            permission_classes=(permissions.IsAuthenticated,))
     def subscribe(self, request, pk):
         subscription = get_object_or_404(User, pk=pk)
         connection_info = {'subscription': subscription,
                            'subscriber': request.user}
         return create_or_delete_connection_shortcut(
-            Subscription,
+            models.Subscription,
             connection_info,
             request,
             self.get_subscription_queryset(),
-            UserRecipeReadSerializer,
+            serializers.UserRecipeReadSerializer,
             response_pk=pk)
 
     def get_subscription_queryset(self):
@@ -112,7 +91,7 @@ class UserViewSet(
 
     def get_all_subscriptions_response(self, request):
         return self.get_paginated_response(
-            UserRecipeReadSerializer(
+            serializers.UserRecipeReadSerializer(
                 self.paginate_queryset(
                     self.get_subscription_queryset()),
                 context={'request': request},
@@ -123,8 +102,8 @@ class UserViewSet(
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve', 'me'):
-            return UserReadSerializer
-        return UserWriteSerializer
+            return serializers.UserReadSerializer
+        return serializers.UserWriteSerializer
 
     def get_queryset(self):
         return User.objects.add_is_subscribed_annotate(
@@ -134,8 +113,8 @@ class UserViewSet(
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet for reading ingredients."""
 
-    queryset = Ingredient.objects.all()
-    serializer_class = IngredientSerializer
+    queryset = models.Ingredient.objects.all()
+    serializer_class = serializers.IngredientSerializer
     filter_backends = (OrderingSearchFilter,)
     search_fields = ('^name', 'name')
     pagination_class = None
@@ -144,8 +123,8 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet for reading tags."""
 
-    queryset = Tag.objects.all()
-    serializer_class = TagSerializer
+    queryset = models.Tag.objects.all()
+    serializer_class = serializers.TagSerializer
     pagination_class = None
 
 
@@ -154,17 +133,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
-    permission_classes = (IsAuthenticatedOrReadOnly,
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,
                           AuthorOnly | ReadOnly,)
     http_method_names = ('get', 'post', 'patch', 'delete')
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
-            return RecipeReadSerializer
-        return RecipeWriteSerializer
+            return serializers.RecipeReadSerializer
+        return serializers.RecipeWriteSerializer
 
     def get_queryset(self):
-        return (Recipe.objects.prefetch_related(
+        return (models.Recipe.objects.prefetch_related(
             Prefetch(
                 'author',
                 queryset=User.objects.add_is_subscribed_annotate(
@@ -172,7 +151,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'tags',
             Prefetch(
                 'ingredient_many_table',
-                queryset=RecipeIngredient.
+                queryset=models.RecipeIngredient.
                 objects.select_related('ingredient'))).
                 add_all_annotations(self.request.user.id))
 
@@ -184,36 +163,37 @@ class RecipeViewSet(viewsets.ModelViewSet):
                                         request=request)})
 
     @action(methods=('post', 'delete'), detail=True,
-            permission_classes=(IsAuthenticated,))
+            permission_classes=(permissions.IsAuthenticated,))
     def favorite(self, request, pk):
-        recipe = get_object_or_404(Recipe, pk=pk)
+        recipe = get_object_or_404(models.Recipe, pk=pk)
         connection_info = {
             'recipe': recipe,
             'user': request.user}
         return create_or_delete_connection_shortcut(
-            UserRecipeFavorite,
+            models.UserRecipeFavorite,
             connection_info,
             request,
             recipe,
-            RecipeShortSerializer)
+            serializers.RecipeShortSerializer)
 
     @action(methods=('post', 'delete'), detail=True,
-            permission_classes=(IsAuthenticated,))
+            permission_classes=(permissions.IsAuthenticated,))
     def shopping_cart(self, request, pk):
-        recipe = get_object_or_404(Recipe, pk=pk)
+        recipe = get_object_or_404(models.Recipe, pk=pk)
         connection_info = {
             'recipe': recipe,
             'user': request.user}
         return create_or_delete_connection_shortcut(
-            UserRecipeShoppingList,
+            models.UserRecipeShoppingList,
             connection_info,
             request,
             recipe,
-            RecipeShortSerializer)
+            serializers.RecipeShortSerializer)
 
-    @action(('get',), detail=False, permission_classes=(IsAuthenticated,))
+    @action(('get',), detail=False,
+            permission_classes=(permissions.IsAuthenticated,))
     def download_shopping_cart(self, request):
-        ingredients = RecipeIngredient.objects.filter(
+        ingredients = models.RecipeIngredient.objects.filter(
             recipe__in_shopping_list_by=request.user).values(
             'ingredient__name',
             'ingredient__measurement_unit').annotate(
