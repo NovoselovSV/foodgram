@@ -216,17 +216,17 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
         recipe = Recipe.objects.create(**validated_data)
-        self.add_m2m_connections(recipe, tags, ingredients)
+        self.set_m2m_connections(recipe, tags, ingredients)
         return recipe
 
     def update(self, recipe, validated_data):
         recipe.image = validated_data.pop('image', recipe.image)
         tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')
-        self.add_m2m_connections(recipe, tags, ingredients)
+        self.set_m2m_connections(recipe, tags, ingredients)
         return super().update(recipe, validated_data)
 
-    def add_m2m_connections(self, recipe, tags, ingredients):
+    def set_m2m_connections(self, recipe, tags, ingredients):
         recipe.tags.set(tags, clear=True)
         recipe.ingredients.clear()
         RecipeIngredient.objects.bulk_create(
