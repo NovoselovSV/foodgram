@@ -47,14 +47,15 @@ class UserPasswordWriteOnly(serializers.Serializer):
 class Base64ImageField(serializers.ImageField):
     """Base64 to image field convertor."""
 
-    def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            data = ContentFile(
+    def to_internal_value(self, b64_image):
+        if isinstance(b64_image, str) and b64_image.startswith('data:image'):
+            format, imgstr = b64_image.split(';base64,')
+            extension = format.split('/')[-1]
+            b64_image = ContentFile(
                 base64.b64decode(imgstr),
-                name='image.' + format.split('/')[-1])
+                name=f'image.{extension}')
 
-        return super().to_internal_value(data)
+        return super().to_internal_value(b64_image)
 
 
 class AvatarSerializer(serializers.ModelSerializer):
