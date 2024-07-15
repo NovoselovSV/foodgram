@@ -1,8 +1,8 @@
 import csv
 
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Prefetch, Sum
-from django.http import HttpResponse
+from django.db.models import Count, F, Prefetch, Sum
+from django.http import FileResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import reverse
 
 from . import serializers
+from .exceptions import InnerException
 from .filters import OrderingSearchFilter, RecipeFilter
 from .m2m_model_actions import create_connection, delete_connection_n_response
 from .permissions import AuthorOnly, ReadOnly
@@ -26,21 +27,17 @@ class UserViewSet(
         viewsets.GenericViewSet):
     """ViewSet for user flows."""
 
-    @action(detail=False, methods=('get',),
-            permission_classes=(permissions.IsAuthenticated,))
+    @action(detail=False, permission_classes=(permissions.IsAuthenticated,))
     def me(self, request):
         self.kwargs['pk'] = request.user.id
         return self.retrieve(request)
 
     @action(detail=False,
-            methods=('put', 'delete'),
+            methods=('put',),
             permission_classes=(permissions.IsAuthenticated,),
             url_path='me/avatar')
     def avatar(self, request):
         user = request.user
-        if request.method == 'DELETE':
-            user.avatar.delete(save=True)
-            return Response(status=status.HTTP_204_NO_CONTENT)
         serializer = serializers.AvatarSerializer(
             user, data=request.data, context={
                 'request': request})
@@ -50,23 +47,24 @@ class UserViewSet(
         self.perform_update(serializer)
         return Response(serializer.data)
 
+    @avatar.mapping.delete
+    def delete_avatar(self, request):
+        request.user.avatar.delete(save=True)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     @action(('post',), detail=False,
             permission_classes=(permissions.IsAuthenticated,))
     def set_password(self, request):
-        serializer = serializers.UserPasswordWriteOnly(data=request.data)
+        serializer = serializers.UserPasswordWriteOnly(
+            data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
 
         user = self.request.user
-        if not user.check_password(serializer.data['current_password']):
-            return Response(
-                data={'error': 'Wrong password'},
-                status=status.HTTP_400_BAD_REQUEST)
-        self.request.user.set_password(serializer.data['new_password'])
-        self.request.user.save()
+        user.set_password(serializer.data['new_password'])
+        user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(('get',), detail=False,
-            permission_classes=(permissions.IsAuthenticated,))
+    @action(detail=False, permission_classes=(permissions.IsAuthenticated,))
     def subscriptions(self, request):
         return self.get_all_subscriptions_response(request)
 
@@ -104,11 +102,8 @@ class UserViewSet(
                 context={'request': request},
                 many=True).data)
 
-    def perform_update(self, serializer):
-        serializer.save()
-
     def get_serializer_class(self):
-        if self.action in ('list', 'retrieve', 'me'):
+        if self.action in {'list', 'retrieve', 'me'}:
             return serializers.UserReadSerializer
         return serializers.UserWriteSerializer
 
@@ -145,7 +140,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     http_method_names = ('get', 'post', 'patch', 'delete')
 
     def get_serializer_class(self):
-        if self.action in ('list', 'retrieve'):
+        if self.action in {'list', 'retrieve'}:
             return serializers.RecipeReadSerializer
         return serializers.RecipeWriteSerializer
 
@@ -162,7 +157,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 objects.select_related('ingredient'))).
                 add_all_annotations(self.request.user.id))
 
-    @action(methods=('get',), detail=True, url_path='get-link')
+    @action(detail=True, url_path='get-link')
     def get_link(self, request, pk):
         return Response(
             data={'short-link': reverse('short-link',
@@ -215,13 +210,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 pk=pk),
             user=request.user)
 
-    @action(('get',), detail=False,
+    @action(detail=False,
             permission_classes=(permissions.IsAuthenticated,))
     def download_shopping_cart(self, request):
         ingredients = models.RecipeIngredient.objects.filter(
             recipe__in_shopping_list_by=request.user).values(
-            'ingredient__name',
-            'ingredient__measurement_unit').annotate(
+            ingredients_name=F('ingredient__name'),
+            measurement_unit=F('ingredient__measurement_unit')).annotate(
             total_amount=Sum('amount'))
         with open('temp.csv', 'w', newline='') as csvfile:
             fieldnames = (
@@ -231,8 +226,4 @@ class RecipeViewSet(viewsets.ModelViewSet):
             writer = csv.writer(csvfile)
             writer.writerow(fieldnames)
             writer.writerows(ingredient.values() for ingredient in ingredients)
-        with open('temp.csv', 'r', newline='') as csvfile:
-            return HttpResponse(csvfile, content_type='text/csv')
-
-        return Response(data={'errors': 'Site error'},
-                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return FileResponse(open('temp.csv', 'rb'), as_attachment=True)

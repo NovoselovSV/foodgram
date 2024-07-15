@@ -11,10 +11,16 @@ class User(AbstractUser):
 
     email = models.EmailField(
         max_length=settings.MAX_EMAIL_LENGTH,
+        verbose_name='email',
         unique=True)
-    first_name = models.CharField(max_length=settings.MAX_USERS_NAMES_LENGTH)
-    last_name = models.CharField(max_length=settings.MAX_USERS_NAMES_LENGTH)
+    first_name = models.CharField(
+        verbose_name='Имя',
+        max_length=settings.MAX_USERS_NAMES_LENGTH)
+    last_name = models.CharField(
+        verbose_name='Фамилия',
+        max_length=settings.MAX_USERS_NAMES_LENGTH)
     username = models.CharField(
+        verbose_name='Псевдоним',
         max_length=settings.MAX_USERS_NAMES_LENGTH,
         unique=True,
         validators=(
@@ -74,16 +80,16 @@ class Subscription(models.Model):
     class Meta:
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
-        constraints = [
+        constraints = (
             models.UniqueConstraint(
                 name='subscriptions_unique_relationships',
-                fields=['subscription', 'subscriber']
+                fields=('subscription', 'subscriber')
             ),
             models.CheckConstraint(
                 name='prevent_self_follow',
                 check=~models.Q(subscription=models.F('subscriber')),
             ),
-        ]
+        )
 
     def __str__(self):
         return f'{self.subscriber} подписан на {self.subscription}'
@@ -151,12 +157,12 @@ class RecipeIngredient(models.Model):
     class Meta:
         verbose_name = 'Ингрединт в рецепте'
         verbose_name_plural = 'Ингредиенты в рецептах'
-        constraints = [
+        constraints = (
             models.UniqueConstraint(
                 name='recipe_ingredient_unique',
-                fields=['recipe', 'ingredient']
+                fields=('recipe', 'ingredient')
             ),
-        ]
+        )
 
     def __str__(self):
         return (f'{self.recipe} содержит {self.ingredient} в '
@@ -180,12 +186,12 @@ class RecipeTag(models.Model):
     class Meta:
         verbose_name = 'Тег рецепта'
         verbose_name_plural = 'Теги рецептов'
-        constraints = [
+        constraints = (
             models.UniqueConstraint(
                 name='recipe_tag_unique',
-                fields=['recipe', 'tag']
+                fields=('recipe', 'tag')
             ),
-        ]
+        )
 
     def __str__(self):
         return f'К {self.recipe} подключен тег {self.tag}'
@@ -253,12 +259,12 @@ class UserRecipeFavorite(models.Model):
     class Meta:
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранные'
-        constraints = [
+        constraints = (
             models.UniqueConstraint(
                 name='recipe_user_favorite_unique',
-                fields=['recipe', 'user']
+                fields=('recipe', 'user')
             ),
-        ]
+        )
 
     def __str__(self):
         return f'{self.user} добавил в избранное {self.recipe}'
@@ -281,12 +287,12 @@ class UserRecipeShoppingList(models.Model):
     class Meta:
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
-        constraints = [
+        constraints = (
             models.UniqueConstraint(
                 name='recipe_user_shopping_unique',
-                fields=['recipe', 'user']
+                fields=('recipe', 'user')
             ),
-        ]
+        )
 
     def __str__(self):
         return f'{self.user} добавил в список покупок {self.recipe}'

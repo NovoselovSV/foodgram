@@ -5,7 +5,7 @@ from django.urls import include, path, register_converter
 from core.converters import Base64Converter
 from core.views import redirect_short_link
 
-register_converter(Base64Converter, "b64url")
+register_converter(Base64Converter, 'b64url')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

@@ -43,6 +43,11 @@ class UserPasswordWriteOnly(serializers.Serializer):
     new_password = serializers.CharField()
     current_password = serializers.CharField()
 
+    def validate_current_password(self, password):
+        if not self.context['request'].user.check_password(password):
+            raise serializers.ValidationError('Wrong password')
+        return password
+
 
 class Base64ImageField(serializers.ImageField):
     """Base64 to image field convertor."""

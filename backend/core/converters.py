@@ -6,8 +6,8 @@ class Base64Converter:
 
     regex = '[A-Za-z0-9_-]+=*'
 
-    def to_python(self, value):
-        return int.from_bytes(urlsafe_base64_decode(value))
+    def to_python(self, b64_number):
+        return int.from_bytes(urlsafe_base64_decode(b64_number))
 
-    def to_url(self, value):
-        return urlsafe_base64_encode(int(value).to_bytes())
+    def to_url(self, id):
+        return urlsafe_base64_encode(int(id).to_bytes())

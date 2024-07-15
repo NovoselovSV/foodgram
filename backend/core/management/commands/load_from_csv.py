@@ -11,7 +11,7 @@ class Command(BaseCommand):
         model = get_name_model_dict()[options['model'][0]]
         files = options['files']
         for file in files:
-            csv_parse(file, model)
+            csv_parse(self, file, model)
 
     def add_arguments(self, parser):
         parser.add_argument(

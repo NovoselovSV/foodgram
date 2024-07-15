@@ -4,7 +4,7 @@ from django.contrib.auth.admin import UserAdmin
 from . import models
 
 
-class CustomUserAdmin(UserAdmin):
+class SearchableUserAdmin(UserAdmin):
     """Custom display for user model in admin zone."""
 
     search_fields = ('username', 'email')
@@ -37,4 +37,4 @@ admin.site.register(models.UserRecipeShoppingList)
 admin.site.register(models.UserRecipeFavorite)
 admin.site.register(models.RecipeTag)
 admin.site.register(models.Recipe, RecipeAdmin)
-admin.site.register(models.User, CustomUserAdmin)
+admin.site.register(models.User, SearchableUserAdmin)
