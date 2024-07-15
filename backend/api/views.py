@@ -44,7 +44,7 @@ class UserViewSet(
         serializer.is_valid(raise_exception=True)
         if user.avatar:
             user.avatar.delete(save=True)
-        self.perform_update(serializer)
+        serializer.save()
         return Response(serializer.data)
 
     @avatar.mapping.delete
