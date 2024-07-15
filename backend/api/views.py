@@ -12,7 +12,7 @@ from rest_framework.viewsets import reverse
 
 from . import serializers
 from .filters import OrderingSearchFilter, RecipeFilter
-from .m2m_model_actions import create_or_delete_connection_shortcut
+from .m2m_model_actions import create_connection, delete_connection_n_response
 from .permissions import AuthorOnly, ReadOnly
 from core import models
 
@@ -70,19 +70,26 @@ class UserViewSet(
     def subscriptions(self, request):
         return self.get_all_subscriptions_response(request)
 
-    @action(('post', 'delete'), detail=True,
+    @action(('post',), detail=True,
             permission_classes=(permissions.IsAuthenticated,))
     def subscribe(self, request, pk):
-        subscription = get_object_or_404(User, pk=pk)
-        connection_info = {'subscription': subscription,
-                           'subscriber': request.user}
-        return create_or_delete_connection_shortcut(
-            models.Subscription,
-            connection_info,
-            request,
-            self.get_subscription_queryset(),
-            serializers.UserRecipeReadSerializer,
-            response_pk=pk)
+        return (create_connection(
+            model=models.Subscription,
+            subscription=get_object_or_404(User, pk=pk),
+            subscriber=request.user)
+            or Response(
+            data=serializers.UserRecipeReadSerializer(
+                self.get_subscription_queryset().get(
+                    pk=pk),
+                context={'request': request}).data,
+            status=status.HTTP_201_CREATED))
+
+    @subscribe.mapping.delete
+    def delete_subscribe(self, request, pk):
+        return delete_connection_n_response(
+            model=models.Subscription,
+            subscription=get_object_or_404(User, pk=pk),
+            subscriber=request.user)
 
     def get_subscription_queryset(self):
         return self.get_queryset().annotate(
@@ -162,33 +169,51 @@ class RecipeViewSet(viewsets.ModelViewSet):
                                         kwargs={'pk': pk},
                                         request=request)})
 
-    @action(methods=('post', 'delete'), detail=True,
+    @action(methods=('post',), detail=True,
             permission_classes=(permissions.IsAuthenticated,))
     def favorite(self, request, pk):
         recipe = get_object_or_404(models.Recipe, pk=pk)
-        connection_info = {
-            'recipe': recipe,
-            'user': request.user}
-        return create_or_delete_connection_shortcut(
-            models.UserRecipeFavorite,
-            connection_info,
-            request,
-            recipe,
-            serializers.RecipeShortSerializer)
+        return (create_connection(
+            model=models.UserRecipeFavorite,
+            recipe=recipe,
+            user=request.user)
+            or Response(
+            data=serializers.RecipeShortSerializer(
+                recipe,
+                context={'request': request}).data,
+            status=status.HTTP_201_CREATED))
 
-    @action(methods=('post', 'delete'), detail=True,
+    @favorite.mapping.delete
+    def delete_favorite(self, request, pk):
+        return delete_connection_n_response(
+            models.UserRecipeFavorite,
+            recipe=get_object_or_404(
+                models.Recipe,
+                pk=pk),
+            user=request.user)
+
+    @action(methods=('post',), detail=True,
             permission_classes=(permissions.IsAuthenticated,))
     def shopping_cart(self, request, pk):
         recipe = get_object_or_404(models.Recipe, pk=pk)
-        connection_info = {
-            'recipe': recipe,
-            'user': request.user}
-        return create_or_delete_connection_shortcut(
+        return (create_connection(
+            model=models.UserRecipeShoppingList,
+            recipe=recipe,
+            user=request.user)
+            or Response(
+            data=serializers.RecipeShortSerializer(
+                recipe,
+                context={'request': request}).data,
+            status=status.HTTP_201_CREATED))
+
+    @shopping_cart.mapping.delete
+    def delete_from_shopping_cart(self, request, pk):
+        return delete_connection_n_response(
             models.UserRecipeShoppingList,
-            connection_info,
-            request,
-            recipe,
-            serializers.RecipeShortSerializer)
+            recipe=get_object_or_404(
+                models.Recipe,
+                pk=pk),
+            user=request.user)
 
     @action(('get',), detail=False,
             permission_classes=(permissions.IsAuthenticated,))

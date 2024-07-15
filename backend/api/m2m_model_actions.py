@@ -1,3 +1,11 @@
+"""Module to provide m2m models actions.
+
+По заданию необходимо в случае ошибок возвращать ответ в виде 'errors':
+'message'. В связи с этим использование валидаторов или других
+стандартных средств (как например переопределение глобального
+обработчика ошибок) будет приводить к неверному поведению или являться
+избыточным. Поэтому функции ниже возвращают самодельный Response объект.
+"""
 from django.conf import settings
 from django.db.models import ObjectDoesNotExist
 from django.db.models.deletion import IntegrityError
@@ -5,11 +13,6 @@ from rest_framework import status
 from rest_framework.response import Response
 
 
-# По заданию необходимо в случае ошибок возвращать ответ в виде 'errors':
-# 'message'. В связи с этим использование валидаторов или других
-# стандартных средств (как например переопределение глобального
-# обработчика ошибок) будет приводить к неверному поведению или являться
-# избыточным.
 def create_connection(model, **kwargs):
     """Create link in m2m model. If errors occure return response object."""
     try:
@@ -21,7 +24,7 @@ def create_connection(model, **kwargs):
             status=status.HTTP_400_BAD_REQUEST)
 
 
-def delete_connection(model, **kwargs):
+def delete_connection_n_response(model, **kwargs):
     """Delete link in m2m model. If errors occure return response object."""
     try:
         model.objects.get(**kwargs).delete()
@@ -29,25 +32,5 @@ def delete_connection(model, **kwargs):
         return Response(
             data={'errors': settings.NOT_CONNECTED_MSG},
             status=status.HTTP_400_BAD_REQUEST)
-
-
-def create_or_delete_connection_shortcut(
-        model,
-        connection_m2m_info,
-        request,
-        response_object,
-        response_serializer_cls,
-        response_pk=None):
-    """Shortcut for handle POST and DELETE requests to m2m tables."""
-    if request.method == 'POST':
-        error_response = create_connection(model=model, **connection_m2m_info)
-        if not error_response and response_pk:
-            response_object = response_object.get(pk=response_pk)
-        return error_response or Response(
-            data=response_serializer_cls(
-                response_object,
-                context={'request': request}).data,
-            status=status.HTTP_201_CREATED)
-
-    error_response = delete_connection(model=model, **connection_m2m_info)
-    return error_response or Response(status=status.HTTP_204_NO_CONTENT)
+    else:
+        return Response(status=status.HTTP_204_NO_CONTENT)
