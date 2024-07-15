@@ -11,7 +11,6 @@ from rest_framework.response import Response
 from rest_framework.viewsets import reverse
 
 from . import serializers
-from .exceptions import InnerException
 from .filters import OrderingSearchFilter, RecipeFilter
 from .m2m_model_actions import create_connection, delete_connection_n_response
 from .permissions import AuthorOnly, ReadOnly
