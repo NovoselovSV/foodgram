@@ -174,56 +174,60 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             'cooking_time')
 
     def validate(self, data):
-        empty_errors = {}
+        empty_value_errors = {}
         for field_name in self.Meta.patch_required_fields:
             if field_name not in data:
                 try:
                     self.fail('required')
-                except serializers.ValidationError as e:
-                    empty_errors[field_name] = e.detail
-        if empty_errors:
-            raise serializers.ValidationError(empty_errors)
+                except serializers.ValidationError as error:
+                    empty_value_errors[field_name] = error.detail
+        if empty_value_errors:
+            raise serializers.ValidationError(empty_value_errors)
+        return data
 
+    def validate_tags(self, tags):
         tag_types = set()
-        for tag in data['tags']:
+        for tag in tags:
             if tag in tag_types:
                 raise serializers.ValidationError(
                     'Один тег добавлен несколько раз')
             tag_types.add(tag)
+        return tags
 
+    def validate_ingredients(self, ingredients):
         ingredient_types = set()
-        for record in data['ingredients']:
-            if record['ingredient'] in ingredient_types:
+        for record in ingredients:
+            if 'ingredient' not in record:
+                raise serializers.ValidationError(
+                    'Запись об ингредиенте без ингредиента')
+            ingredient = record['ingredient']
+            if ingredient in ingredient_types:
                 raise serializers.ValidationError(
                     'Один ингредиент добавлен несколько раз')
-            ingredient_types.add(record['ingredient'])
-        return data
+            ingredient_types.add(ingredient)
+        return ingredients
 
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
         recipe = Recipe.objects.create(**validated_data)
-        recipe.tags.set(tags)
-        for record in ingredients:
-            RecipeIngredient.objects.create(recipe=recipe, **record)
+        self.add_m2m_connections(recipe, tags, ingredients)
         return recipe
 
-    def update(self, instance, validated_data):
-        instance.name = validated_data.get('name', instance.name)
-        instance.image = validated_data.get('image', instance.image)
-        instance.text = validated_data.get('text', instance.text)
-        instance.cooking_time = validated_data.get(
-            'cooking_time', instance.cooking_time)
-        if 'tags' in validated_data:
-            instance.tags.clear()
-            for tag in validated_data['tags']:
-                instance.tags.add(tag)
-        if 'ingredients' in validated_data:
-            instance.ingredients.clear()
-            for record in validated_data['ingredients']:
-                RecipeIngredient.objects.create(recipe=instance, **record)
-        instance.save()
-        return instance
+    def update(self, recipe, validated_data):
+        recipe.image = validated_data.pop('image', recipe.image)
+        tags = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredients')
+        self.add_m2m_connections(recipe, tags, ingredients)
+        return super().update(recipe, validated_data)
+
+    def add_m2m_connections(self, recipe, tags, ingredients):
+        recipe.tags.set(tags, clear=True)
+        recipe.ingredients.clear()
+        RecipeIngredient.objects.bulk_create(
+            (RecipeIngredient(recipe=recipe, **record)
+                for record
+                in ingredients))
 
     def to_representation(self, recipe):
         recipe.author.is_subscribed = False
